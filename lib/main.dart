@@ -12,7 +12,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: WelcomeScreen(),//استدعاء اول صفحة
+      home: const WelcomeScreen(),//استدعاء اول صفحة
     );
   }
 }
+
