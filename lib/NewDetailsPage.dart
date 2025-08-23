@@ -16,7 +16,6 @@ class _NewDetailsPageState extends State<NewDetailsPage> with TickerProviderStat
   
   // Variables for user input
   String foodName = '';
-  String price = '';
   File? selectedImage;
   final ImagePicker _picker = ImagePicker();
   
@@ -74,7 +73,7 @@ class _NewDetailsPageState extends State<NewDetailsPage> with TickerProviderStat
   }
 
   void _saveDetails() {
-    if (foodName.isEmpty || price.isEmpty || selectedImage == null) {
+    if (foodName.isEmpty || selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Please fill all fields and select an image'),
@@ -87,7 +86,6 @@ class _NewDetailsPageState extends State<NewDetailsPage> with TickerProviderStat
     // Here you can save the data or navigate back with the new details
     Navigator.pop(context, {
       'name': foodName,
-      'price': price,
       'image': selectedImage!.path,
       'temperature': temperature,
       'time': time,
@@ -228,35 +226,6 @@ class _NewDetailsPageState extends State<NewDetailsPage> with TickerProviderStat
                           ),
                         ),
                         SizedBox(height: 20.0),
-                        
-                        // Price Input
-                        TextField(
-                          controller: _priceController,
-                          onChanged: (value) {
-                            setState(() {
-                              price = value;
-                            });
-                          },
-                          decoration: InputDecoration(
-                            labelText: 'Price',
-                            labelStyle: TextStyle(
-                              fontFamily: 'Montserrat',
-                              color: Colors.grey,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15.0),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15.0),
-                              borderSide: BorderSide(color: Color(0xFF7A9BEE), width: 2.0),
-                            ),
-                          ),
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            fontSize: 18.0,
-                            color: Colors.grey,
-                          ),
-                        ),
                         SizedBox(height: 30.0),
                         
                         // Control Sliders

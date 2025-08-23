@@ -117,16 +117,16 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Container(
                         height: MediaQuery.of(context).size.height - 300.0,
                         child: ListView(children: [
-                          _buildFoodItem('assets/images/plate1.png', 'Salmon bowl', '\$24.00', 0),
-                          _buildFoodItem('assets/images/plate2.png', 'Spring bowl', '\$22.00', 1),
-                          _buildFoodItem('assets/images/plate6.png', 'Avocado bowl', '\$26.00', 2),
-                          _buildFoodItem('assets/images/plate5.png', 'Berry bowl', '\$24.00', 3),
-                          _buildFoodItem('assets/images/plate1.png', 'Salmon bowl', '\$24.00', 4),
-                          _buildFoodItem('assets/images/plate2.png', 'Spring bowl', '\$22.00', 5),
-                          _buildFoodItem('assets/images/plate1.png', 'Salmon bowl', '\$24.00', 6),
-                          _buildFoodItem('assets/images/plate2.png', 'Spring bowl', '\$22.00', 7),
-                          _buildFoodItem('assets/images/plate6.png', 'Avocado bowl', '\$26.00', 8),
-                          _buildFoodItem('assets/images/plate5.png', 'Berry bowl', '\$24.00', 9),
+                          _buildFoodItem('assets/images/plate1.png', 'Salmon bowl'),
+                          _buildFoodItem('assets/images/plate2.png', 'Spring bowl'),
+                          _buildFoodItem('assets/images/plate6.png', 'Avocado bowl'),
+                          _buildFoodItem('assets/images/plate5.png', 'Berry bowl'),
+                          _buildFoodItem('assets/images/plate1.png', 'Salmon bowl'),
+                          _buildFoodItem('assets/images/plate2.png', 'Spring bowl'),
+                          _buildFoodItem('assets/images/plate1.png', 'Salmon bowl'),
+                          _buildFoodItem('assets/images/plate2.png', 'Spring bowl'),
+                          _buildFoodItem('assets/images/plate6.png', 'Avocado bowl'),
+                          _buildFoodItem('assets/images/plate5.png', 'Berry bowl'),
                         ]))),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -201,7 +201,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildFoodItem(String imgPath, String foodName, String price, int index) {
+  Widget _buildFoodItem(String imgPath, String foodName) {
     return Padding(
         padding: EdgeInsets.only(left: 10.0, right: 10.0, top: 10.0),
         child: InkWell(
@@ -212,8 +212,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 pageBuilder: (context, animation, secondaryAnimation) => DetailsPage(
                   imgPath: imgPath,
                   foodName: foodName,
-                  price: price,
-                  index: index,
+
                 ),
                 transitionsBuilder: (context, animation, secondaryAnimation, child) {
                   const begin = Offset(1.0, 0.0);
@@ -242,7 +241,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Row(
                   children: [
                     Hero(
-                      tag: '$imgPath-$index',
+                      tag: '$imgPath',
                       child: Image(
                         image: AssetImage(imgPath),
                         fit: BoxFit.cover,
@@ -262,14 +261,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             fontWeight: FontWeight.bold
                           )
                         ),
-                        Text(
-                          price,
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            fontSize: 15.0,
-                            color: Colors.grey
-                          )
-                        )
+                       
                       ]
                     )
                   ]

@@ -3,15 +3,13 @@ import 'package:flutter/material.dart';
 class DetailsPage extends StatefulWidget {
   final String imgPath;
   final String foodName;
-  final String price;
-  final int index;
+  //final int index;
 
   const DetailsPage({
     Key? key,
     required this.imgPath,
     required this.foodName,
-    required this.price,
-    required this.index,
+    //required this.index,
   }) : super(key: key);
 
   @override
@@ -111,7 +109,7 @@ class _DetailsPageState extends State<DetailsPage> with TickerProviderStateMixin
                 top: 30.0,
                 left: (MediaQuery.of(context).size.width / 2) - 100.0,
                 child: Hero(
-                    tag: '${widget.imgPath}-${widget.index}',
+                    tag: '${widget.imgPath}',
                     child: Container(
                         decoration: BoxDecoration(
                             image: DecorationImage(
@@ -139,11 +137,6 @@ class _DetailsPageState extends State<DetailsPage> with TickerProviderStateMixin
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: <Widget>[
-                            Text(widget.price,
-                                style: TextStyle(
-                                    fontFamily: 'Montserrat',
-                                    fontSize: 20.0,
-                                    color: Colors.grey)),
                             Container(height: 25.0, color: Colors.grey, width: 1.0),
                             Container(
                               width: 125.0,
