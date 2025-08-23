@@ -23,6 +23,11 @@ class _DetailsPageState extends State<DetailsPage> with TickerProviderStateMixin
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  
+  // New variables for temperature, timer, and steam
+  int temperature = 175;
+  int time = 30;
+  int steam = 1;
 
   @override
   void initState() {
@@ -195,19 +200,79 @@ class _DetailsPageState extends State<DetailsPage> with TickerProviderStateMixin
                         ),
                         SizedBox(height: 20.0),
                         Container(
-                          height: 150.0,
-                          child: ListView(
-                            scrollDirection: Axis.horizontal,
-                            children: <Widget>[
-                              _buildInfoCard('WEIGHT', '300', 'G'),
-                              SizedBox(width: 10.0),
-                                _buildInfoCard('CALORIES', '267', 'CAL'),
-                                SizedBox(width: 10.0),
-                                _buildInfoCard('VITAMINS', 'A, B6', 'VIT'),
-                                SizedBox(width: 10.0),
-                                _buildInfoCard('AVAIL', 'NO', 'AV')
+                          padding: EdgeInsets.symmetric(horizontal: 20.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Temperature: $temperature °C",
+                                  style: TextStyle(
+                                    fontSize: 16, 
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Montserrat',
+                                    color: Colors.black87,
+                                  )),
+                              Slider(
+                                value: temperature.toDouble(),
+                                min: 100,
+                                max: 250,
+                                divisions: 15,
+                                activeColor: Color(0xFF7A9BEE),
+                                inactiveColor: Colors.grey.withOpacity(0.3),
+                                label: "$temperature °C",
+                                onChanged: (val) {
+                                  setState(() {
+                                    temperature = val.toInt();
+                                  });
+                                },
+                              ),
+
+                              SizedBox(height: 20),
+                              Text("Time: $time min",
+                                  style: TextStyle(
+                                    fontSize: 16, 
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Montserrat',
+                                    color: Colors.black87,
+                                  )),
+                              Slider(
+                                value: time.toDouble(),
+                                min: 1,
+                                max: 60,
+                                divisions: 59,
+                                activeColor: Color(0xFF7A9BEE),
+                                inactiveColor: Colors.grey.withOpacity(0.3),
+                                label: "$time min",
+                                onChanged: (val) {
+                                  setState(() {
+                                    time = val.toInt();
+                                  });
+                                },
+                              ),
+
+                              SizedBox(height: 20),
+                              Text("Steam Level: $steam",
+                                  style: TextStyle(
+                                    fontSize: 16, 
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Montserrat',
+                                    color: Colors.black87,
+                                  )),
+                              Slider(
+                                value: steam.toDouble(),
+                                min: 0,
+                                max: 2,
+                                divisions: 2,
+                                activeColor: Color(0xFF7A9BEE),
+                                inactiveColor: Colors.grey.withOpacity(0.3),
+                                label: steam == 0 ? "Off" : steam == 1 ? "Medium" : "High",
+                                onChanged: (val) {
+                                  setState(() {
+                                    steam = val.toInt();
+                                  });
+                                },
+                              ),
                             ],
-                          )
+                          ),
                         ),
                         SizedBox(height: 20.0),
                           Padding(
@@ -220,7 +285,7 @@ class _DetailsPageState extends State<DetailsPage> with TickerProviderStateMixin
                               height: 50.0,
                               child: Center(
                                 child: Text(
-                                  widget.price,
+                                  "Start Cooking",
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontFamily: 'Montserrat'

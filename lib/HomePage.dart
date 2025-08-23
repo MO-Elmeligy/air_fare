@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'Bluetooth_connection.dart';
 import 'detailsPage.dart';
+import 'NewDetailsPage.dart';
 
 void main() => runApp(MyApp());
 
@@ -128,28 +129,37 @@ class _MyHomePageState extends State<MyHomePage> {
                           _buildFoodItem('assets/images/plate5.png', 'Berry bowl', '\$24.00', 9),
                         ]))),
                     Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: <Widget>[
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
                     
-                    Container(
-                      height: 65.0,
-                      width: 120.0,
-                      decoration: BoxDecoration(
-                          border: Border.all(
-                              color: Colors.grey,
-                              style: BorderStyle.solid,
-                              width: 1.0),
-                          borderRadius: BorderRadius.circular(10.0),
-                          color:Colors.black),
-                      child: Center(
-                          child: Text('New',
-                              style: TextStyle(
-                                  fontFamily: 'Montserrat',
-                                  color: Colors.white,
-                                  fontSize: 24.0))),
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => NewDetailsPage(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        height: 65.0,
+                        width: 120.0,
+                        decoration: BoxDecoration(
+                            border: Border.all(
+                                color: Colors.grey,
+                                style: BorderStyle.solid,
+                                width: 1.0),
+                            borderRadius: BorderRadius.circular(10.0),
+                            color:Colors.black),
+                        child: Center(
+                            child: Text('New',
+                                style: TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    color: Colors.white,
+                                    fontSize: 24.0)))),
+                      ),
+                      ],
                     )
-                  ],
-                )
               ],
             ),
           )

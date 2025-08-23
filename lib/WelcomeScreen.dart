@@ -130,21 +130,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                               );
                             }
                           : () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Please connect to a Bluetooth device first'),
-                                  backgroundColor: Colors.red,
-                                  action: SnackBarAction(
-                                    label: 'Connect',
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ScanResultsPage(),
-                                        ),
-                                      );
-                                    },
-                                  ),
+                              // Navigate directly to Bluetooth page instead of showing SnackBar
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ScanResultsPage(),
                                 ),
                               );
                             },
