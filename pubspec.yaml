@@ -34,6 +34,8 @@ dependencies:
  # Replace with the latest version
   get: ^4.6.5 # Ensure the `get` package is also added
   image_picker: ^1.0.7
+  shared_preferences: ^2.2.2
+  provider: ^6.1.1
 
 
   # The following adds the Cupertino Icons font to your application.

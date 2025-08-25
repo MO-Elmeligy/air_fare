@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
+import 'dart:io';
 import 'Bluetooth_connection.dart';
 import 'detailsPage.dart';
 import 'NewDetailsPage.dart';
+import 'models/food_item.dart';
+import 'providers/food_provider.dart';
 
 void main() => runApp(MyApp());
 
@@ -116,17 +120,99 @@ class _MyHomePageState extends State<MyHomePage> {
                     padding: EdgeInsets.only(top: 45.0),
                     child: Container(
                         height: MediaQuery.of(context).size.height - 300.0,
-                        child: ListView(children: [
-                          _buildFoodItem('assets/images/plate1.png', 'Salmon bowl'),
-                          _buildFoodItem('assets/images/plate2.png', 'Spring bowl'),
-                          _buildFoodItem('assets/images/plate6.png', 'Avocado bowl'),
-                          _buildFoodItem('assets/images/plate5.png', 'Berry bowl'),
-                          _buildFoodItem('assets/images/plate1.png', 'Salmon bowl'),
-                          _buildFoodItem('assets/images/plate2.png', 'Spring bowl'),
-                          _buildFoodItem('assets/images/plate1.png', 'Salmon bowl'),
-                          _buildFoodItem('assets/images/plate2.png', 'Spring bowl'),
-                          _buildFoodItem('assets/images/plate6.png', 'Avocado bowl'),
-                          _buildFoodItem('assets/images/plate5.png', 'Berry bowl'),
+                        child: ListView(                        children: [
+                          // Original dishes
+                          _buildOriginalFoodItem('assets/images/plate1.png', 'Salmon bowl'),
+                          _buildOriginalFoodItem('assets/images/plate2.png', 'Spring bowl'),
+                          _buildOriginalFoodItem('assets/images/plate6.png', 'Avocado bowl'),
+                          _buildOriginalFoodItem('assets/images/plate5.png', 'Berry bowl'),
+                          _buildOriginalFoodItem('assets/images/plate1.png', 'Salmon bowl'),
+                          _buildOriginalFoodItem('assets/images/plate2.png', 'Spring bowl'),
+                          _buildOriginalFoodItem('assets/images/plate1.png', 'Salmon bowl'),
+                          _buildOriginalFoodItem('assets/images/plate2.png', 'Spring bowl'),
+                          _buildOriginalFoodItem('assets/images/plate6.png', 'Avocado bowl'),
+                          _buildOriginalFoodItem('assets/images/plate5.png', 'Berry bowl'),
+                          
+                          // Divider
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20.0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Divider(
+                                    color: Colors.grey[300],
+                                    thickness: 1,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 15.0),
+                                  child: Text(
+                                    'Custom Items',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey[600],
+                                      fontFamily: 'Montserrat',
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Divider(
+                                    color: Colors.grey[300],
+                                    thickness: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          // Custom food items
+                          Consumer<FoodProvider>(
+                            builder: (context, foodProvider, child) {
+                              if (foodProvider.foodItems.isEmpty) {
+                                return Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(20.0),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.add_circle_outline,
+                                          size: 60,
+                                          color: Colors.grey[400],
+                                        ),
+                                        SizedBox(height: 15),
+                                        Text(
+                                          'No custom items yet',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.grey[600],
+                                            fontFamily: 'Montserrat',
+                                          ),
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'Add your own food items using the New button',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[500],
+                                            fontFamily: 'Montserrat',
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }
+                              
+                              return Column(
+                                children: foodProvider.foodItems.map((foodItem) {
+                                  return _buildFoodItem(foodItem);
+                                }).toList(),
+                              );
+                            },
+                          ),
                         ]))),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -201,36 +287,66 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildFoodItem(String imgPath, String foodName) {
+  void _editFoodItem(FoodItem foodItem) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NewDetailsPage(
+          foodItem: foodItem,
+          isEditing: true,
+        ),
+      ),
+    );
+  }
+
+  void _deleteFoodItem(FoodItem foodItem) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Delete Food Item'),
+          content: Text('Are you sure you want to delete "${foodItem.name}"?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final foodProvider = Provider.of<FoodProvider>(context, listen: false);
+                await foodProvider.deleteFoodItem(foodItem.id);
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Food item deleted successfully'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              },
+              child: Text('Delete'),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildOriginalFoodItem(String imgPath, String foodName) {
     return Padding(
         padding: EdgeInsets.only(left: 10.0, right: 10.0, top: 10.0),
         child: InkWell(
           onTap: () {
             Navigator.push(
               context,
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) => DetailsPage(
+              MaterialPageRoute(
+                builder: (context) => DetailsPage(
                   imgPath: imgPath,
                   foodName: foodName,
-
+                  foodItem: null, // Original items don't have FoodItem
                 ),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  const begin = Offset(1.0, 0.0);
-                  const end = Offset.zero;
-                  const curve = Curves.easeInOut;
-                  
-                  var tween = Tween(begin: begin, end: end).chain(
-                    CurveTween(curve: curve),
-                  );
-                  
-                  var offsetAnimation = animation.drive(tween);
-                  
-                  return SlideTransition(
-                    position: offsetAnimation,
-                    child: child,
-                  );
-                },
-                transitionDuration: Duration(milliseconds: 500),
               ),
             );
           },
@@ -261,7 +377,15 @@ class _MyHomePageState extends State<MyHomePage> {
                             fontWeight: FontWeight.bold
                           )
                         ),
-                       
+                        SizedBox(height: 5.0),
+                        Text(
+                          'Original Recipe',
+                          style: TextStyle(
+                            fontFamily: 'Montserrat',
+                            fontSize: 12.0,
+                            color: Colors.grey[600],
+                          ),
+                        ),
                       ]
                     )
                   ]
@@ -272,6 +396,112 @@ class _MyHomePageState extends State<MyHomePage> {
                 color: Colors.black,
                 onPressed: () {}
               )
+            ],
+          )
+        ));
+  }
+
+  Widget _buildFoodItem(FoodItem foodItem) {
+    return Padding(
+        padding: EdgeInsets.only(left: 10.0, right: 10.0, top: 10.0),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15.0),
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.2),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetailsPage(
+                          imgPath: foodItem.imagePath,
+                          foodName: foodItem.name,
+                          foodItem: foodItem,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.all(15.0),
+                    child: Row(
+                      children: [
+                        Hero(
+                          tag: '${foodItem.id}',
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10.0),
+                              border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10.0),
+                              child: Image.file(
+                                File(foodItem.imagePath),
+                                fit: BoxFit.cover,
+                                height: 75.0,
+                                width: 75.0,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 15.0),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children:[
+                              Text(
+                                foodItem.name,
+                                style: TextStyle(
+                                  fontFamily: 'Montserrat',
+                                  fontSize: 17.0,
+                                  fontWeight: FontWeight.bold
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              SizedBox(height: 5.0),
+                              Text(
+                                '${foodItem.temperature}°C • ${foodItem.time}min • Steam: ${foodItem.steam}',
+                                style: TextStyle(
+                                  fontFamily: 'Montserrat',
+                                  fontSize: 12.0,
+                                  color: Colors.grey[600],
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ]
+                          ),
+                        ),
+                      ]
+                    ),
+                  ),
+                ),
+              ),
+              // Action buttons
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.edit, color: Color(0xFF7A9BEE)),
+                    onPressed: () => _editFoodItem(foodItem),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _deleteFoodItem(foodItem),
+                  ),
+                ],
+              ),
             ],
           )
         ));

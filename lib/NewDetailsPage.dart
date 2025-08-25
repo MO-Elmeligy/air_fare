@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'models/food_item.dart';
+import 'providers/food_provider.dart';
 
 class NewDetailsPage extends StatefulWidget {
-  const NewDetailsPage({Key? key}) : super(key: key);
+  final FoodItem? foodItem;
+  final bool isEditing;
+
+  const NewDetailsPage({
+    Key? key,
+    this.foodItem,
+    this.isEditing = false,
+  }) : super(key: key);
 
   @override
   _NewDetailsPageState createState() => _NewDetailsPageState();
@@ -31,6 +41,18 @@ class _NewDetailsPageState extends State<NewDetailsPage> with TickerProviderStat
   @override
   void initState() {
     super.initState();
+    
+    // Load existing data if editing
+    if (widget.isEditing && widget.foodItem != null) {
+      final item = widget.foodItem!;
+      foodName = item.name;
+      temperature = item.temperature;
+      time = item.time;
+      steam = item.steam;
+      selectedImage = File(item.imagePath);
+      _nameController.text = item.name;
+    }
+    
     _animationController = AnimationController(
       duration: Duration(milliseconds: 800),
       vsync: this,
@@ -72,7 +94,7 @@ class _NewDetailsPageState extends State<NewDetailsPage> with TickerProviderStat
     }
   }
 
-  void _saveDetails() {
+  void _saveDetails() async {
     if (foodName.isEmpty || selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -83,14 +105,50 @@ class _NewDetailsPageState extends State<NewDetailsPage> with TickerProviderStat
       return;
     }
     
-    // Here you can save the data or navigate back with the new details
-    Navigator.pop(context, {
-      'name': foodName,
-      'image': selectedImage!.path,
-      'temperature': temperature,
-      'time': time,
-      'steam': steam,
-    });
+    final foodProvider = Provider.of<FoodProvider>(context, listen: false);
+    
+    if (widget.isEditing && widget.foodItem != null) {
+      // Update existing food item
+      final updatedItem = widget.foodItem!.copyWith(
+        name: foodName,
+        imagePath: selectedImage!.path,
+        temperature: temperature,
+        time: time,
+        steam: steam,
+      );
+      
+      await foodProvider.updateFoodItem(updatedItem);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Food item updated successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      // Create new food item
+      final foodItem = FoodItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: foodName,
+        imagePath: selectedImage!.path,
+        temperature: temperature,
+        time: time,
+        steam: steam,
+        createdAt: DateTime.now(),
+      );
+      
+      await foodProvider.addFoodItem(foodItem);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Food item added successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+    
+    // Navigate back
+    Navigator.pop(context);
   }
 
   @override
@@ -107,11 +165,13 @@ class _NewDetailsPageState extends State<NewDetailsPage> with TickerProviderStat
         ),
         backgroundColor: Colors.transparent,
         elevation: 0.0,
-        title: Text('Add New Food',
-            style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontSize: 18.0,
-                color: Colors.white)),
+        title: Text(
+          widget.isEditing ? 'Edit Food Item' : 'Add New Food',
+          style: TextStyle(
+              fontFamily: 'Montserrat',
+              fontSize: 18.0,
+              color: Colors.white)
+        ),
         centerTitle: true,
         actions: <Widget>[
           IconButton(
@@ -121,75 +181,63 @@ class _NewDetailsPageState extends State<NewDetailsPage> with TickerProviderStat
           )
         ],
       ),
-      body: ListView(
+      body: Column(
         children: [
-          Stack(
-            children: [
-              Container(
-                height: MediaQuery.of(context).size.height - 82.0,
-                width: MediaQuery.of(context).size.width,
-                color: Colors.transparent
-              ),
-              Positioned(
-                top: 75.0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(45.0),
-                      topRight: Radius.circular(45.0),
-                    ),
-                    color: Colors.white
-                  ),
-                  height: MediaQuery.of(context).size.height - 100.0,
-                  width: MediaQuery.of(context).size.width
-                )
-              ),
-              Positioned(
-                top: 30.0,
-                left: (MediaQuery.of(context).size.width / 2) - 100.0,
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20.0),
-                      border: Border.all(color: Color(0xFF7A9BEE), width: 3.0),
-                    ),
-                    height: 200.0,
-                    width: 200.0,
-                    child: selectedImage != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(17.0),
-                            child: Image.file(
-                              selectedImage!,
-                              fit: BoxFit.cover,
-                            ),
-                          )
-                        : Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.add_a_photo,
-                                size: 60,
-                                color: Color(0xFF7A9BEE),
-                              ),
-                              SizedBox(height: 10),
-                              Text(
-                                'Tap to add image',
-                                style: TextStyle(
-                                  color: Color(0xFF7A9BEE),
-                                  fontFamily: 'Montserrat',
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
+          // Top section with image picker
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+            child: GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20.0),
+                  border: Border.all(color: Colors.white, width: 3.0),
+                ),
+                height: 200.0,
+                width: 200.0,
+                child: selectedImage != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(17.0),
+                        child: Image.file(
+                          selectedImage!,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_a_photo,
+                            size: 60,
+                            color: Colors.white,
                           ),
-                  ),
-                )
+                          SizedBox(height: 10),
+                          Text(
+                            'Tap to add image',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Montserrat',
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
               ),
-              Positioned(
-                top: 250.0,
-                left: 25.0,
-                right: 25.0,
+            ),
+          ),
+          
+          // Main content area
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(45.0),
+                  topRight: Radius.circular(45.0),
+                ),
+                color: Colors.white
+              ),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(25.0),
                 child: FadeTransition(
                   opacity: _fadeAnimation,
                   child: SlideTransition(
@@ -225,12 +273,11 @@ class _NewDetailsPageState extends State<NewDetailsPage> with TickerProviderStat
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(height: 20.0),
                         SizedBox(height: 30.0),
                         
                         // Control Sliders
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 20.0),
+                          padding: EdgeInsets.symmetric(horizontal: 10.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -304,7 +351,7 @@ class _NewDetailsPageState extends State<NewDetailsPage> with TickerProviderStat
                             ],
                           ),
                         ),
-                        SizedBox(height: 30.0),
+                        SizedBox(height: 40.0),
                         
                         // Save Button
                         Container(
@@ -324,7 +371,7 @@ class _NewDetailsPageState extends State<NewDetailsPage> with TickerProviderStat
                               ),
                             ),
                             child: Text(
-                              'Save Food Item',
+                              widget.isEditing ? 'Update Food Item' : 'Save Food Item',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontFamily: 'Montserrat',
@@ -334,15 +381,16 @@ class _NewDetailsPageState extends State<NewDetailsPage> with TickerProviderStat
                             ),
                           ),
                         ),
+                        SizedBox(height: 20.0),
                       ],
                     ),
                   ),
-                )
-              )
-            ]
-          )
-        ]
-      )
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
