@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import 'Bluetooth_connection.dart';
+import 'BluetoothPage.dart';
 import 'detailsPage.dart';
 import 'NewDetailsPage.dart';
 import 'models/food_item.dart';
@@ -55,21 +56,22 @@ class _MyHomePageState extends State<MyHomePage> {
                         // Bluetooth status indicator
                         Obx(() => IconButton(
                           icon: Icon(
-                            bluetoothController.isBluetoothConnected 
+                            bluetoothController.isConnected.value 
                                 ? Icons.bluetooth_connected 
                                 : Icons.bluetooth_disabled,
-                            color: bluetoothController.isBluetoothConnected 
+                            color: bluetoothController.isConnected.value 
                                 ? Colors.green 
                                 : Colors.red,
                           ),
                           onPressed: () {
-                            if (bluetoothController.isBluetoothConnected) {
+                            if (bluetoothController.isConnected.value) {
                               _showDisconnectDialog();
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Bluetooth is not connected'),
-                                  backgroundColor: Colors.red,
+                              // Navigate to Bluetooth page
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => BluetoothPage(),
                                 ),
                               );
                             }
@@ -260,7 +262,7 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Disconnect Bluetooth'),
-          content: Text('Do you want to disconnect from ${bluetoothController.connectedDevice?.name ?? "the device"}?'),
+          content: Text('Do you want to disconnect from ${bluetoothController.connectedDeviceName.value}?'),
           actions: [
             TextButton(
               onPressed: () {

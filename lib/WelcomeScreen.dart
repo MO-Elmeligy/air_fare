@@ -1,6 +1,6 @@
-import 'package:air_fare_app/BluetoothPage.dart';
 import 'package:air_fare_app/Bluetooth_connection.dart';
 import 'package:air_fare_app/HomePage.dart';
+import 'package:air_fare_app/BluetoothPage.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:get/get.dart';
@@ -67,14 +67,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 children: [
                   // Bluetooth animation - responsive size
                   GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ScanResultsPage(),
-                        ),
-                      );
-                    },
+                                          onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BluetoothPage(),
+                          ),
+                        );
+                      },
                     child: Container(
                       margin: EdgeInsets.only(top: screenHeight * 0.02),
                       padding: EdgeInsets.all(screenWidth * 0.02),
@@ -120,7 +120,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         ),
                         minimumSize: Size(screenWidth * 0.6, screenHeight * 0.06),
                       ),
-                      onPressed: bluetoothController.isBluetoothConnected 
+                      onPressed: bluetoothController.isConnected.value 
                           ? () {
                               Navigator.push(
                                 context,
@@ -134,7 +134,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => ScanResultsPage(),
+                                  builder: (context) => BluetoothPage(),
                                 ),
                               );
                             },
@@ -143,10 +143,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            bluetoothController.isBluetoothConnected 
+                            bluetoothController.isConnected.value 
                                 ? Icons.bluetooth_connected 
                                 : Icons.bluetooth_disabled,
-                            color: bluetoothController.isBluetoothConnected 
+                            color: bluetoothController.isConnected.value 
                                 ? Colors.green 
                                 : Colors.red,
                             size: iconSize,
@@ -154,7 +154,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           SizedBox(width: screenWidth * 0.03),
                           Flexible(
                             child: Text(
-                              bluetoothController.isBluetoothConnected ? "Start" : "Need Connectoin ",
+                              bluetoothController.isConnected.value ? "Start" : "Need Connection",
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,

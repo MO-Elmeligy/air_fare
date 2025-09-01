@@ -1,148 +1,293 @@
 
-import 'package:flutter_blue/flutter_blue.dart'; 
 import 'package:get/get.dart';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:async';
+import 'dart:typed_data';
 
+// Mock Bluetooth Device class
+class MockBluetoothDevice {
+  final String name;
+  final String address;
+  final bool isBonded;
+
+  MockBluetoothDevice({
+    required this.name,
+    required this.address,
+    this.isBonded = false,
+  });
+}
+
+// Mock Bluetooth Controller for testing
 class BluetoothController extends GetxController {
-  FlutterBlue? flutterBlue;
+  // Observable variables
+  RxBool isBluetoothEnabled = true.obs; // Mock as enabled
   RxBool isConnected = false.obs;
-  RxBool isBluetoothOn = false.obs;
-  RxBool isPlatformSupported = false.obs;
-  BluetoothDevice? connectedDevice;
+  RxBool isScanning = false.obs;
+  RxList<MockBluetoothDevice> discoveredDevices = <MockBluetoothDevice>[].obs;
+  RxString connectedDeviceName = ''.obs;
+  RxString lastReceivedData = ''.obs;
   
+  // Stream for receiving data
+  StreamController<String> dataStreamController = StreamController<String>.broadcast();
+  Stream<String> get dataStream => dataStreamController.stream;
+
   @override
   void onInit() {
     super.onInit();
     _initializeBluetooth();
   }
 
-  void _initializeBluetooth() {
-    // Check if platform supports Bluetooth
-    if (kIsWeb) {
-      isPlatformSupported.value = false;
-      isBluetoothOn.value = false;
-      return;
-    }
-    
+  @override
+  void onClose() {
+    dataStreamController.close();
+    super.onClose();
+  }
+
+  Future<void> _initializeBluetooth() async {
     try {
-      if (Platform.isAndroid || Platform.isIOS) {
-        flutterBlue = FlutterBlue.instance;
-        isPlatformSupported.value = true;
-        checkBluetoothStatus();
-      } else {
-        // For Windows, Linux, macOS - simulate Bluetooth functionality
-        isPlatformSupported.value = true;
-        isBluetoothOn.value = true;
-        // Simulate connection for testing purposes
-        simulateConnection();
-      }
+      // Mock initialization - always successful
+      isBluetoothEnabled.value = true;
+      print('Mock Bluetooth initialized successfully');
     } catch (e) {
       print('Error initializing Bluetooth: $e');
-      isPlatformSupported.value = false;
-      isBluetoothOn.value = false;
+      isBluetoothEnabled.value = false;
     }
   }
 
-  void simulateConnection() {
-    // Simulate a successful connection for testing on desktop platforms
-    Future.delayed(Duration(seconds: 2), () {
-      isConnected.value = true;
-      print('Simulated Bluetooth connection for desktop platform');
-    });
-  }
-
-  Future<void> checkBluetoothStatus() async {
-    if (!isPlatformSupported.value || flutterBlue == null) return;
-    
+  // Request Bluetooth permissions and enable Bluetooth
+  Future<void> requestBluetoothPermissions() async {
     try {
-      // Check if Bluetooth is available and on
-      isBluetoothOn.value = await flutterBlue!.isAvailable;
-      
-      // Listen to Bluetooth state changes
-      flutterBlue!.state.listen((state) {
-        isBluetoothOn.value = state == BluetoothState.on;
-        if (state != BluetoothState.on) {
-          isConnected.value = false;
-          connectedDevice = null;
-        }
-      });
+      // Mock permission request - always successful
+      isBluetoothEnabled.value = true;
+      print('Mock Bluetooth permissions granted');
     } catch (e) {
-      print('Error checking Bluetooth status: $e');
-      isBluetoothOn.value = false;
+      print('Error requesting Bluetooth permissions: $e');
     }
   }
 
-  Future<void> connectToDevice(BluetoothDevice device) async {
-    if (!isPlatformSupported.value) {
-      // Simulate connection for desktop platforms
-      simulateConnection();
+  // Scan for available devices
+  Future<void> scanDevices() async {
+    if (!isBluetoothEnabled.value) {
+      print('Bluetooth is not enabled');
       return;
     }
-    
+
     try {
-      await device.connect();
-      connectedDevice = device;
-      isConnected.value = true;
+      isScanning.value = true;
+      discoveredDevices.clear();
+
+      // Mock scanning - add some fake devices
+      await Future.delayed(Duration(seconds: 2));
       
-      // Listen to connection state changes
-      device.state.listen((state) {
-        isConnected.value = state == BluetoothDeviceState.connected;
-        if (state != BluetoothDeviceState.connected) {
-          connectedDevice = null;
-        }
-      });
+      discoveredDevices.addAll([
+        MockBluetoothDevice(
+          name: 'HC-05',
+          address: '00:11:22:33:44:55',
+          isBonded: true,
+        ),
+        MockBluetoothDevice(
+          name: 'Arduino BT',
+          address: 'AA:BB:CC:DD:EE:FF',
+          isBonded: false,
+        ),
+        MockBluetoothDevice(
+          name: 'ESP32',
+          address: '11:22:33:44:55:66',
+          isBonded: false,
+        ),
+      ]);
+
+      isScanning.value = false;
+      print('Mock scan completed - found ${discoveredDevices.length} devices');
+
+    } catch (e) {
+      print('Error scanning devices: $e');
+      isScanning.value = false;
+    }
+  }
+
+  // Connect to a specific device
+  Future<bool> connectToDevice(MockBluetoothDevice device) async {
+    if (!isBluetoothEnabled.value) {
+      print('Bluetooth is not enabled');
+      return false;
+    }
+
+    try {
+      // Disconnect from any existing connection
+      await disconnect();
+
+      print('Mock connecting to ${device.name}...');
+      
+      // Mock connection delay
+      await Future.delayed(Duration(seconds: 2));
+      
+      isConnected.value = true;
+      connectedDeviceName.value = device.name;
+      
+      print('Mock connected to ${device.name}');
+
+      // Start mock data stream
+      _startMockDataStream();
+
+      return true;
+
     } catch (e) {
       print('Error connecting to device: $e');
       isConnected.value = false;
-      connectedDevice = null;
+      connectedDeviceName.value = '';
+      return false;
     }
   }
 
+  // Send data to connected device
+  Future<bool> sendData(String data) async {
+    if (!isConnected.value) {
+      print('Not connected to any device');
+      return false;
+    }
+
+    try {
+      print('Mock sent: $data');
+      
+      // Simulate response
+      await Future.delayed(Duration(milliseconds: 500));
+      String response = _generateMockResponse(data);
+      dataStreamController.add(response);
+      
+      return true;
+
+    } catch (e) {
+      print('Error sending data: $e');
+      return false;
+    }
+  }
+
+  // Send bytes directly
+  Future<bool> sendBytes(Uint8List bytes) async {
+    if (!isConnected.value) {
+      print('Not connected to any device');
+      return false;
+    }
+
+    try {
+      String data = String.fromCharCodes(bytes);
+      print('Mock sent bytes: $data');
+      
+      // Simulate response
+      await Future.delayed(Duration(milliseconds: 500));
+      String response = _generateMockResponse(data);
+      dataStreamController.add(response);
+      
+      return true;
+
+    } catch (e) {
+      print('Error sending bytes: $e');
+      return false;
+    }
+  }
+
+  // Disconnect from current device
   Future<void> disconnect() async {
-    if (connectedDevice != null && flutterBlue != null) {
-      try {
-        await connectedDevice!.disconnect();
-      } catch (e) {
-        print('Error disconnecting: $e');
-      }
+    try {
+      isConnected.value = false;
+      connectedDeviceName.value = '';
+      print('Mock disconnected from device');
+    } catch (e) {
+      print('Error disconnecting: $e');
     }
-    isConnected.value = false;
-    connectedDevice = null;
   }
 
-  bool get isBluetoothConnected => isBluetoothOn.value && isConnected.value;
-  
-  Future<void> scanDevices() async {
-    if (!isPlatformSupported.value) {
-      print('Bluetooth not supported on this platform');
-      return;
+  // Get paired devices
+  Future<List<MockBluetoothDevice>> getPairedDevices() async {
+    try {
+      // Return mock paired devices
+      return [
+        MockBluetoothDevice(
+          name: 'HC-05',
+          address: '00:11:22:33:44:55',
+          isBonded: true,
+        ),
+      ];
+    } catch (e) {
+      print('Error getting paired devices: $e');
+      return [];
     }
-    
-    if (flutterBlue == null) {
-      // For desktop platforms, simulate scanning
-      print('Simulating device scan for desktop platform');
-      return;
-    }
-    
-    if (!isBluetoothOn.value) {
-      print('Bluetooth is not available');
-      return;
-    }
-    
-    // the Bluetooth starts scanning for devices for (seconds: 4)
-    // Start scanning
-    flutterBlue!.startScan(timeout: Duration(seconds: 4));
+  }
 
-    // Listen to scan results
-    var subscription = flutterBlue!.scanResults.listen((results) {
-        // do something with scan results
-        for (ScanResult r in results) {
-            print('${r.device.name} found! rssi: ${r.rssi}');
-        }
+  // Check if device is paired
+  Future<bool> isDevicePaired(MockBluetoothDevice device) async {
+    try {
+      List<MockBluetoothDevice> pairedDevices = await getPairedDevices();
+      return pairedDevices.any((pairedDevice) => pairedDevice.address == device.address);
+    } catch (e) {
+      print('Error checking if device is paired: $e');
+      return false;
+    }
+  }
+
+  // Pair with a device
+  Future<bool> pairDevice(MockBluetoothDevice device) async {
+    try {
+      print('Mock pairing with ${device.name}');
+      await Future.delayed(Duration(seconds: 1));
+      return true;
+    } catch (e) {
+      print('Error pairing device: $e');
+      return false;
+    }
+  }
+
+  // Unpair a device
+  Future<bool> unpairDevice(MockBluetoothDevice device) async {
+    try {
+      print('Mock unpairing ${device.name}');
+      await Future.delayed(Duration(seconds: 1));
+      return true;
+    } catch (e) {
+      print('Error unpairing device: $e');
+      return false;
+    }
+  }
+
+  // Mock data stream
+  void _startMockDataStream() {
+    Timer.periodic(Duration(seconds: 3), (timer) {
+      if (!isConnected.value) {
+        timer.cancel();
+        return;
+      }
+      
+      // Send mock sensor data
+      String mockData = _generateMockSensorData();
+      dataStreamController.add(mockData);
+      lastReceivedData.value = mockData;
     });
+  }
 
-    // Stop scanning
-    flutterBlue!.stopScan();
+  // Generate mock response based on sent data
+  String _generateMockResponse(String data) {
+    String cleanData = data.trim().toLowerCase();
+    
+    switch (cleanData) {
+      case 'start_cooking':
+        return 'cooking_started';
+      case 'stop_cooking':
+        return 'cooking_stopped';
+      case 'get_temperature':
+        return 'temp:75.5';
+      case 'get_status':
+        return 'status:cooking_active';
+      case 'test':
+        return 'test_response:ok';
+      default:
+        return 'received:$data';
+    }
+  }
+
+  // Generate mock sensor data
+  String _generateMockSensorData() {
+    double temp = 70.0 + (DateTime.now().millisecondsSinceEpoch % 100) / 10.0;
+    int humidity = 50 + (DateTime.now().millisecondsSinceEpoch % 30);
+    return 'sensor_data:temp:$temp,humidity:$humidity';
   }
 }

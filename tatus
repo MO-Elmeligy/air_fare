@@ -1,0 +1,17 @@
+[33mcommit fd8c564030ffa955618c7f80c13ff990cb93138b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: MO-Elmeligy <wasdmagneto17@gmail.com>
+Date:   Mon Aug 25 06:33:00 2025 +0300
+
+    adding_Reheat_new
+
+ README_FOOD_SYSTEM.md                         |  82 [32m+++++[m
+ lib/HomePage.dart                             | 296 [32m+++++++++++++++[m[31m--[m
+ lib/NewDetailsPage.dart                       | 228 [32m+++++++[m[31m------[m
+ lib/detailsPage.dart                          | 443 [32m+++++++++++++++++[m[31m---------[m
+ lib/main.dart                                 |  11 [32m+[m[31m-[m
+ lib/models/food_item.dart                     |  66 [32m++++[m
+ lib/providers/food_provider.dart              |  90 [32m++++++[m
+ macos/Flutter/GeneratedPluginRegistrant.swift |   2 [32m+[m
+ pubspec.lock                                  | 128 [32m++++++++[m
+ pubspec.yaml                                  |   2 [32m+[m
+ 10 files changed, 1069 insertions(+), 279 deletions(-)

@@ -1,260 +1,282 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_blue/flutter_blue.dart';
 import 'package:get/get.dart';
 import 'Bluetooth_connection.dart';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 
-class ScanResultsPage extends StatefulWidget {
-  @override
-  _ScanResultsPageState createState() => _ScanResultsPageState();
-}
-
-class _ScanResultsPageState extends State<ScanResultsPage> {
-  final FlutterBlue flutterBlue = FlutterBlue.instance;
+class BluetoothPage extends StatelessWidget {
   final BluetoothController bluetoothController = Get.put(BluetoothController());
-
-  @override
-  void initState() {
-    super.initState();
-    if (bluetoothController.isPlatformSupported.value) {
-      bluetoothController.scanDevices();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bluetooth Devices'),
-        actions: [
-          Obx(() => bluetoothController.isConnected.value
-              ? Icon(Icons.bluetooth_connected, color: Colors.green)
-              : Icon(Icons.bluetooth_disabled, color: Colors.red)),
-        ],
+        title: Text('Bluetooth Connection'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
       ),
-      body: Column(
-        children: [
-          // Warning message about connection requirement
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(16),
-            margin: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.orange, width: 2),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Bluetooth Status Card
+            Card(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          bluetoothController.isBluetoothEnabled.value
+                              ? Icons.bluetooth_connected
+                              : Icons.bluetooth_disabled,
+                          color: bluetoothController.isBluetoothEnabled.value
+                              ? Colors.green
+                              : Colors.red,
+                          size: 30,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'Bluetooth Status',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Obx(() => Text(
+                      bluetoothController.isBluetoothEnabled.value
+                          ? 'Bluetooth is enabled'
+                          : 'Bluetooth is disabled',
+                      style: TextStyle(
+                        color: bluetoothController.isBluetoothEnabled.value
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                    )),
+                    SizedBox(height: 10),
+                    if (!bluetoothController.isBluetoothEnabled.value)
+                      ElevatedButton(
+                        onPressed: () => bluetoothController.requestBluetoothPermissions(),
+                        child: Text('Enable Bluetooth'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
-            child: Row(
-              children: [
-                Icon(Icons.warning, color: Colors.orange, size: 24),
-                SizedBox(width: 12),
-                Expanded(
+            
+            SizedBox(height: 20),
+            
+            // Connection Status Card
+            Card(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          bluetoothController.isConnected.value
+                              ? Icons.link
+                              : Icons.link_off,
+                          color: bluetoothController.isConnected.value
+                              ? Colors.green
+                              : Colors.red,
+                          size: 30,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'Connection Status',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Obx(() => Text(
+                      bluetoothController.isConnected.value
+                          ? 'Connected to: ${bluetoothController.connectedDeviceName.value}'
+                          : 'Not connected',
+                      style: TextStyle(
+                        color: bluetoothController.isConnected.value
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                    )),
+                    SizedBox(height: 10),
+                    if (bluetoothController.isConnected.value)
+                      ElevatedButton(
+                        onPressed: () => bluetoothController.disconnect(),
+                        child: Text('Disconnect'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            
+            SizedBox(height: 20),
+            
+            // Scan Button
+            Obx(() => ElevatedButton(
+              onPressed: bluetoothController.isBluetoothEnabled.value && !bluetoothController.isScanning.value
+                  ? () => bluetoothController.scanDevices()
+                  : null,
+              child: bluetoothController.isScanning.value
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Text('Scanning...'),
+                      ],
+                    )
+                  : Text('Scan for Devices'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: 15),
+              ),
+            )),
+            
+            SizedBox(height: 20),
+            
+            // Discovered Devices List
+            Expanded(
+              child: Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'تنبيه مهم!',
+                        'Discovered Devices',
                         style: TextStyle(
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.orange[800],
                         ),
                       ),
-                      SizedBox(height: 4),
+                      SizedBox(height: 10),
+                      Expanded(
+                        child: Obx(() => bluetoothController.discoveredDevices.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'No devices found',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                itemCount: bluetoothController.discoveredDevices.length,
+                                itemBuilder: (context, index) {
+                                  MockBluetoothDevice device = bluetoothController.discoveredDevices[index];
+                                  return ListTile(
+                                    leading: Icon(Icons.bluetooth),
+                                    title: Text(device.name ?? 'Unknown Device'),
+                                    subtitle: Text(device.address),
+                                    trailing: ElevatedButton(
+                                      onPressed: bluetoothController.isConnected.value
+                                          ? null
+                                          : () => bluetoothController.connectToDevice(device),
+                                      child: Text('Connect'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              )),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            SizedBox(height: 20),
+            
+            // Data Communication Section
+            if (bluetoothController.isConnected.value) ...[
+              Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        'يجب الاتصال بجهاز Bluetooth للوصول إلى الصفحة التالية',
+                        'Data Communication',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.orange[700],
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Connection status
-          Obx(() => Container(
-            padding: EdgeInsets.all(16),
-            color: bluetoothController.isBluetoothConnected 
-                ? Colors.green.withOpacity(0.1) 
-                : Colors.red.withOpacity(0.1),
-            child: Row(
-              children: [
-                Icon(
-                  bluetoothController.isBluetoothConnected 
-                      ? Icons.bluetooth_connected 
-                      : Icons.bluetooth_disabled,
-                  color: bluetoothController.isBluetoothConnected 
-                      ? Colors.green 
-                      : Colors.red,
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    bluetoothController.isBluetoothConnected 
-                        ? 'Connected to ${bluetoothController.connectedDevice?.name ?? "Device"}'
-                        : 'Not connected',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: bluetoothController.isBluetoothConnected 
-                          ? Colors.green 
-                          : Colors.red,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          )),
-          
-          // Platform-specific content
-          Obx(() {
-            if (!bluetoothController.isPlatformSupported.value) {
-              return Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text(
-                        'Bluetooth not supported on this platform',
-                        style: TextStyle(fontSize: 18, color: Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-            
-            if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
-              // Desktop platform - show simulated content
-              return Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.bluetooth, size: 64, color: Colors.blue),
-                      SizedBox(height: 16),
-                      Text(
-                        'Desktop Platform Detected',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Bluetooth functionality is simulated for testing',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () => _simulateConnection(),
-                        child: Text('Simulate Connection'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-            
-            // Mobile platform - show actual Bluetooth content
-            return Expanded(
-              child: StreamBuilder<List<ScanResult>>(
-                stream: flutterBlue.scanResults,
-                builder: (context, snapshot) {
-                  if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: snapshot.data!.length,
-                      itemBuilder: (context, index) {
-                        final data = snapshot.data![index];
-                        return Card(
-                          elevation: 2,
-                          child: ListTile(
-                            title: Text(data.device.name.isNotEmpty
-                                ? data.device.name
-                                : 'Unknown Device'),
-                            subtitle: Text(data.device.id.id),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(data.rssi.toString()),
-                                SizedBox(width: 8),
-                                Obx(() => bluetoothController.connectedDevice?.id == data.device.id
-                                    ? Icon(Icons.bluetooth_connected, color: Colors.green)
-                                    : IconButton(
-                                        icon: Icon(Icons.bluetooth),
-                                        onPressed: () => _connectToDevice(data.device),
-                                      )),
-                              ],
+                      SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              decoration: InputDecoration(
+                                hintText: 'Enter command to send',
+                                border: OutlineInputBorder(),
+                              ),
+                              onSubmitted: (value) {
+                                if (value.isNotEmpty) {
+                                  bluetoothController.sendData(value);
+                                }
+                              },
                             ),
                           ),
-                        );
-                      },
-                    );
-                  } else {
-                    return const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text('Scanning for devices...'),
+                          SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              // Send a test command
+                              bluetoothController.sendData('test_command');
+                            },
+                            child: Text('Send Test'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
                         ],
                       ),
-                    );
-                  }
-                },
+                      SizedBox(height: 10),
+                      Obx(() => Text(
+                        'Last received: ${bluetoothController.lastReceivedData.value.isEmpty ? "No data" : bluetoothController.lastReceivedData.value}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      )),
+                    ],
+                  ),
+                ),
               ),
-            );
-          }),
-        ],
-      ),
-      floatingActionButton: Obx(() {
-        if (!bluetoothController.isPlatformSupported.value || 
-            kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
-          return SizedBox.shrink();
-        }
-        return FloatingActionButton(
-          onPressed: () {
-            bluetoothController.scanDevices();
-          },
-          child: Icon(Icons.refresh),
-        );
-      }),
-    );
-  }
-
-  void _simulateConnection() {
-    bluetoothController.simulateConnection();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Simulated Bluetooth connection'),
-        backgroundColor: Colors.blue,
+            ],
+          ],
+        ),
       ),
     );
-  }
-
-  void _connectToDevice(BluetoothDevice device) async {
-    try {
-      await bluetoothController.connectToDevice(device);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Connected to ${device.name}'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to connect: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 }
