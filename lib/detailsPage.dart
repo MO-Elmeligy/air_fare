@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'models/food_item.dart';
 import 'NewDetailsPage.dart';
 import 'providers/food_provider.dart';
+import 'services/cooking_controller.dart';
+import 'services/arduino_command_handler.dart';
+import 'services/native_bluetooth_controller.dart';
 
 class DetailsPage extends StatefulWidget {
   final String imgPath;
@@ -24,7 +28,6 @@ class DetailsPage extends StatefulWidget {
 }
 
 class _DetailsPageState extends State<DetailsPage> with TickerProviderStateMixin {
-  var selectedCard = 'WEIGHT';
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -33,6 +36,11 @@ class _DetailsPageState extends State<DetailsPage> with TickerProviderStateMixin
   int temperature = 175;
   int time = 30;
   int steam = 1;
+  
+  // Controllers
+  final CookingController cookingController = Get.put(CookingController());
+  final NativeBluetoothController bluetoothController = Get.find<NativeBluetoothController>();
+  final ArduinoCommandHandler arduinoHandler = ArduinoCommandHandler();
 
   @override
   void initState() {
@@ -354,22 +362,62 @@ class _DetailsPageState extends State<DetailsPage> with TickerProviderStateMixin
                         SizedBox(height: 20.0),
                           Padding(
                             padding: EdgeInsets.only(bottom:5.0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0), bottomLeft: Radius.circular(25.0), bottomRight: Radius.circular(25.0)),
-                                color: Colors.black
-                              ),
-                              height: 50.0,
-                              child: Center(
-                                child: Text(
-                                  "Start Cooking",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontFamily: 'Montserrat'
-                                  )
+                            child: Obx(() => InkWell(
+                              onTap: bluetoothController.isConnected.value 
+                                  ? () => _startCooking()
+                                  : () => _showConnectionDialog(),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(10.0), 
+                                    topRight: Radius.circular(10.0), 
+                                    bottomLeft: Radius.circular(25.0), 
+                                    bottomRight: Radius.circular(25.0)
+                                  ),
+                                  color: bluetoothController.isConnected.value 
+                                      ? Colors.black 
+                                      : Colors.grey[600],
+                                ),
+                                height: 50.0,
+                                child: Center(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      if (cookingController.isCookingInProgress) ...[
+                                        SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        ),
+                                        SizedBox(width: 10),
+                                      ],
+                                      Icon(
+                                        bluetoothController.isConnected.value 
+                                            ? (cookingController.isCookingInProgress ? Icons.pause : Icons.play_arrow)
+                                            : Icons.bluetooth_disabled,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        bluetoothController.isConnected.value 
+                                            ? (cookingController.isCookingInProgress ? "Cooking..." : "Start Cooking")
+                                            : "Connect Bluetooth",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: 'Montserrat',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
+                            )),
                           )
                       ],
                     ),
@@ -379,77 +427,7 @@ class _DetailsPageState extends State<DetailsPage> with TickerProviderStateMixin
         ]));
   }
 
-  Widget _buildInfoCard(String cardTitle, String info, String unit) {
-    return InkWell(
-      onTap: () {
-        selectCard(cardTitle);
-      },
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: 500),
-        curve: Curves.easeIn,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10.0),
-          color: cardTitle == selectedCard ? Color(0xFF7A9BEE) : Colors.white,
-          border: Border.all(
-            color: cardTitle == selectedCard ? 
-            Colors.transparent :
-            Colors.grey.withOpacity(0.3),
-            style: BorderStyle.solid,
-          width: 0.75
-          ),
-          
-        ),
-        height: 100.0,
-        width: 100.0,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0, left: 15.0),
-              child: Text(cardTitle,
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontSize: 12.0,
-                    color:
-                        cardTitle == selectedCard ? Colors.white : Colors.grey.withOpacity(0.7),
-                  )),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 15.0, bottom: 8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(info,
-                      style: TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontSize: 14.0,
-                          color: cardTitle == selectedCard
-                              ? Colors.white
-                              : Colors.black,
-                          fontWeight: FontWeight.bold)),
-                  Text(unit,
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontSize: 12.0,
-                        color: cardTitle == selectedCard
-                            ? Colors.white
-                            : Colors.black,
-                      ))
-                ],
-              ),
-            )
-          ]
-        )
-      )
-    );
-  }
 
-  selectCard(cardTitle) {
-    setState(() {
-      selectedCard = cardTitle;
-    });
-  }
 
   void _editFoodItem() {
     if (widget.foodItem != null) {
@@ -503,4 +481,145 @@ class _DetailsPageState extends State<DetailsPage> with TickerProviderStateMixin
       );
     }
   }
+
+  // Start cooking function
+  Future<void> _startCooking() async {
+    if (cookingController.isCookingInProgress) {
+      // If already cooking, show pause/resume options
+      _showCookingControlDialog();
+      return;
+    }
+
+    // Create FoodItem with current settings
+    FoodItem foodItem = FoodItem(
+      id: widget.foodItem?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      name: widget.foodName,
+      imagePath: widget.imgPath,
+      temperature: temperature,
+      time: time,
+      steam: steam,
+      createdAt: widget.foodItem?.createdAt ?? DateTime.now(),
+    );
+
+    // Show confirmation dialog
+    bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Start Cooking'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Are you sure you want to start cooking "${widget.foodName}"?'),
+              SizedBox(height: 15),
+              Text('Settings:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('• Temperature: $temperature°C'),
+              Text('• Time: $time minutes'),
+              Text('• Steam: ${steam == 0 ? "Off" : steam == 1 ? "Medium" : "High"}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text('Start Cooking'),
+              style: TextButton.styleFrom(foregroundColor: Colors.green),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      // Start cooking
+      bool success = await cookingController.startCooking(foodItem);
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start cooking'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Show cooking control dialog
+  void _showCookingControlDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Cooking Control'),
+          content: Text('What would you like to do?'),
+          actions: [
+            if (cookingController.isCookingPaused) ...[
+              TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await cookingController.resumeCooking();
+                },
+                child: Text('Resume'),
+                style: TextButton.styleFrom(foregroundColor: Colors.green),
+              ),
+            ] else ...[
+              TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await cookingController.pauseCooking();
+                },
+                child: Text('Pause'),
+                style: TextButton.styleFrom(foregroundColor: Colors.orange),
+              ),
+            ],
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await cookingController.stopCooking();
+              },
+              child: Text('Stop'),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Show connection dialog
+  void _showConnectionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Bluetooth Required'),
+          content: Text('Please connect to a Bluetooth device to start cooking.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Navigate to Bluetooth page
+                Navigator.pushNamed(context, '/bluetooth');
+              },
+              child: Text('Connect'),
+              style: TextButton.styleFrom(foregroundColor: Colors.blue),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 }

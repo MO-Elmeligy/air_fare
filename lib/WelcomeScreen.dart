@@ -1,4 +1,4 @@
-import 'package:air_fare_app/Bluetooth_connection.dart';
+import 'services/native_bluetooth_controller.dart';
 import 'package:air_fare_app/HomePage.dart';
 import 'package:air_fare_app/BluetoothPage.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +13,7 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  final BluetoothController bluetoothController = Get.put(BluetoothController());
+  final NativeBluetoothController bluetoothController = Get.put(NativeBluetoothController());
 
   @override
   Widget build(BuildContext context) {

@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'Bluetooth_connection.dart';
+import 'dart:async';
+import 'services/native_bluetooth_controller.dart';
 
 class BluetoothPage extends StatelessWidget {
-  final BluetoothController bluetoothController = Get.put(BluetoothController());
+  final NativeBluetoothController bluetoothController = Get.put(NativeBluetoothController());
 
   @override
   Widget build(BuildContext context) {
+    // Request permissions when page loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      bluetoothController.requestBluetoothPermissions();
+      
+      // Start connection status checker
+      _startConnectionStatusChecker();
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Bluetooth Connection'),
@@ -189,20 +198,29 @@ class BluetoothPage extends StatelessWidget {
                             : ListView.builder(
                                 itemCount: bluetoothController.discoveredDevices.length,
                                 itemBuilder: (context, index) {
-                                  MockBluetoothDevice device = bluetoothController.discoveredDevices[index];
+                                  Map<String, dynamic> device = bluetoothController.discoveredDevices[index];
                                   return ListTile(
                                     leading: Icon(Icons.bluetooth),
-                                    title: Text(device.name ?? 'Unknown Device'),
-                                    subtitle: Text(device.address),
-                                    trailing: ElevatedButton(
-                                      onPressed: bluetoothController.isConnected.value
-                                          ? null
-                                          : () => bluetoothController.connectToDevice(device),
-                                      child: Text('Connect'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green,
-                                        foregroundColor: Colors.white,
-                                      ),
+                                    title: Text(device['name']?.isNotEmpty == true ? device['name'] : 'Unknown Device'),
+                                    subtitle: Text(device['address'] ?? 'No Address'),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (bluetoothController.isDevicePaired(device))
+                                          Icon(Icons.check_circle, color: Colors.green, size: 20),
+                                        SizedBox(width: 8),
+                                        ElevatedButton(
+                                          onPressed: () async {
+                                            print('Connect button pressed for device: ${device['name']}');
+                                            await bluetoothController.connectToDevice(device);
+                                          },
+                                          child: Text('Connect'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.green,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   );
                                 },
@@ -278,5 +296,17 @@ class BluetoothPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Check connection status periodically
+  void _startConnectionStatusChecker() {
+    Timer.periodic(Duration(seconds: 3), (timer) async {
+      if (bluetoothController.connectedDeviceName.value.isNotEmpty) {
+        bool actuallyConnected = await bluetoothController.isDeviceConnected();
+        if (!actuallyConnected) {
+          print('Connection lost - device is not actually connected');
+        }
+      }
+    });
   }
 }

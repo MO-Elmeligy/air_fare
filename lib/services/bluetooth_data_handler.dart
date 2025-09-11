@@ -1,8 +1,12 @@
 import 'package:get/get.dart';
-import '../Bluetooth_connection.dart';
+import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'native_bluetooth_controller.dart';
+import 'cooking_controller.dart';
 
 class BluetoothDataHandler {
-  final BluetoothController bluetoothController = Get.find<BluetoothController>();
+  final NativeBluetoothController bluetoothController = Get.find<NativeBluetoothController>();
+  final CookingController cookingController = Get.find<CookingController>();
   
   // Singleton pattern
   static final BluetoothDataHandler _instance = BluetoothDataHandler._internal();
@@ -18,12 +22,18 @@ class BluetoothDataHandler {
 
   void handleIncomingData(String data) {
     // Clean the data
-    String cleanData = data.trim().toLowerCase();
+    String cleanData = data.trim();
     
     print('Handling incoming data: $cleanData');
     
+    // Try to parse as JSON first
+    if (cleanData.startsWith('{') && cleanData.endsWith('}')) {
+      _handleJsonData(cleanData);
+      return;
+    }
+    
     // Handle different types of commands
-    switch (cleanData) {
+    switch (cleanData.toLowerCase()) {
       // Cooking commands
       case 'start_cooking':
         _handleStartCooking();
@@ -315,5 +325,119 @@ class BluetoothDataHandler {
   // Method to request sensor data
   void requestSensorData(String sensorType) {
     sendCustomCommand('get_$sensorType');
+  }
+
+  // Handle JSON data from Arduino
+  void _handleJsonData(String jsonData) {
+    try {
+      Map<String, dynamic> data = jsonDecode(jsonData);
+      
+      // Handle different JSON commands from Arduino
+      if (data.containsKey('status')) {
+        _handleStatusJson(data);
+      } else if (data.containsKey('ok')) {
+        _handleOkResponse(data);
+      } else if (data.containsKey('error')) {
+        _handleErrorResponse(data);
+      } else if (data.containsKey('telemetry')) {
+        _handleTelemetryData(data);
+      } else {
+        print('Unknown JSON data received: $data');
+      }
+    } catch (e) {
+      print('Error parsing JSON data: $e');
+      print('Raw data: $jsonData');
+    }
+  }
+
+  // Handle status JSON from Arduino
+  void _handleStatusJson(Map<String, dynamic> data) {
+    print('📊 Status received from Arduino: $data');
+    
+    // Update cooking controller with Arduino status
+    if (data['status'] != null) {
+      Map<String, dynamic> status = data['status'];
+      
+      // Update temperature if available
+      if (status['adc'] != null) {
+        // Convert ADC value to temperature (you may need to adjust this formula)
+        double temperature = (status['adc'] as int) * 0.488; // Example conversion
+        cookingController.currentTemperature.value = temperature;
+      }
+      
+      // Update mode
+      if (status['mode'] != null) {
+        int mode = status['mode'] as int;
+        print('Arduino control mode: ${mode == 0 ? "Normal (ADC)" : "App Control"}');
+      }
+      
+      // Update output status
+      if (status['out1'] != null) {
+        print('Output 1: ${status['out1'] == 1 ? "ON" : "OFF"}');
+      }
+      if (status['out2'] != null) {
+        print('Output 2: ${status['out2'] == 1 ? "ON" : "OFF"}');
+      }
+      if (status['out3'] != null) {
+        print('Output 3: ${status['out3'] == 1 ? "ON" : "OFF"}');
+      }
+      if (status['out4'] != null) {
+        print('Output 4: ${status['out4'] == 1 ? "ON" : "OFF"}');
+      }
+      if (status['out5'] != null) {
+        print('Output 5: ${status['out5'] == 1 ? "ON" : "OFF"}');
+      }
+    }
+  }
+
+  // Handle OK response from Arduino
+  void _handleOkResponse(Map<String, dynamic> data) {
+    print('✅ Arduino response: OK');
+    
+    if (data['mode'] != null) {
+      int mode = data['mode'] as int;
+      print('Mode set to: ${mode == 0 ? "Normal (ADC)" : "App Control"}');
+    }
+  }
+
+  // Handle error response from Arduino
+  void _handleErrorResponse(Map<String, dynamic> data) {
+    print('❌ Arduino error: ${data['error']}');
+    
+    // Show error to user
+    Get.snackbar(
+      'Arduino Error',
+      data['error'] ?? 'Unknown error occurred',
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
+  }
+
+  // Handle telemetry data from Arduino
+  void _handleTelemetryData(Map<String, dynamic> data) {
+    print('📡 Telemetry data received: $data');
+    
+    // Process telemetry data
+    if (data['telemetry'] != null) {
+      Map<String, dynamic> telemetry = data['telemetry'];
+      
+      // Update temperature
+      if (telemetry['temperature'] != null) {
+        double temperature = (telemetry['temperature'] as num).toDouble();
+        cookingController.currentTemperature.value = temperature;
+      }
+      
+      // Update humidity if available
+      if (telemetry['humidity'] != null) {
+        double humidity = (telemetry['humidity'] as num).toDouble();
+        print('Humidity: ${humidity.toStringAsFixed(1)}%');
+      }
+      
+      // Update weight if available
+      if (telemetry['weight'] != null) {
+        double weight = (telemetry['weight'] as num).toDouble();
+        print('Weight: ${weight.toStringAsFixed(1)}g');
+      }
+    }
   }
 }

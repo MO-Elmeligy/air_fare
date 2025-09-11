@@ -6,12 +6,13 @@ plugins {
 }
 
 android {
-    compileSdkVersion 33 // Ensure this is set to the latest supported version
+    namespace "com.example.air_fare_app"
+    compileSdkVersion 35 // Updated to support newer dependencies
 
     defaultConfig {
         applicationId "com.example.air_fare_app"
         minSdkVersion flutter.minSdkVersion // Set this to 19
-        targetSdkVersion 33 // Keep this as the latest supported version
+        targetSdkVersion 35 // Updated to match compileSdkVersion
         versionCode 1
         versionName "1.0"
     }

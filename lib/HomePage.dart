@@ -2,14 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
-import 'Bluetooth_connection.dart';
+import 'services/native_bluetooth_controller.dart';
 import 'BluetoothPage.dart';
 import 'detailsPage.dart';
 import 'NewDetailsPage.dart';
 import 'models/food_item.dart';
 import 'providers/food_provider.dart';
+import 'services/bluetooth_data_handler.dart';
 
-void main() => runApp(MyApp());
+void main() {
+  // Initialize GetX
+  Get.put(NativeBluetoothController());
+  
+  // Initialize Bluetooth data handler
+  BluetoothDataHandler().initialize();
+  
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
 
@@ -28,7 +37,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final BluetoothController bluetoothController = Get.find<BluetoothController>();
+  final NativeBluetoothController bluetoothController = Get.find<NativeBluetoothController>();
 
   @override
   Widget build(BuildContext context) {

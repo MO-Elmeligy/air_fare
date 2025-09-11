@@ -3,18 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:get/get.dart';
 import 'providers/food_provider.dart';
-import 'Bluetooth_connection.dart';
+import 'services/native_bluetooth_controller.dart';
 import 'services/bluetooth_data_handler.dart';
+import 'services/cooking_controller.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Bluetooth controller
-  Get.put(BluetoothController());
+  // Initialize controllers
+  Get.put(NativeBluetoothController());
+  Get.put(CookingController());
   
   // Initialize Bluetooth data handler
   final dataHandler = BluetoothDataHandler();
   dataHandler.initialize();
+  
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {

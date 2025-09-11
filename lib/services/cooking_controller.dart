@@ -1,11 +1,13 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../Bluetooth_connection.dart';
+import 'native_bluetooth_controller.dart';
 import '../models/food_item.dart';
+import 'arduino_command_handler.dart';
 
 class CookingController extends GetxController {
-  final BluetoothController bluetoothController = Get.find<BluetoothController>();
+  final NativeBluetoothController bluetoothController = Get.find<NativeBluetoothController>();
+  final ArduinoCommandHandler arduinoHandler = ArduinoCommandHandler();
   
   // Cooking state
   RxBool isCooking = false.obs;
@@ -48,34 +50,26 @@ class CookingController extends GetxController {
       totalCookingTime = foodItem.time;
       remainingTime.value = totalCookingTime;
       
-      // Send cooking command to device
-      String cookingCommand = 'start_cooking:${foodItem.temperature}:${foodItem.time}:${foodItem.steam}';
-      bool sent = await bluetoothController.sendData(cookingCommand);
-      
-      if (sent) {
-        isCooking.value = true;
-        cookingStatus.value = 'cooking';
-        
-        // Start timer
-        _startCookingTimer();
-        
-        Get.snackbar(
-          'Cooking Started',
-          'Started cooking ${foodItem.name}',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
-        
-        return true;
-      } else {
-        Get.snackbar(
-          'Error',
-          'Failed to send cooking command',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        return false;
+      // Send Arduino commands
+      bool arduinoSuccess = await arduinoHandler.sendCookingSequence(foodItem);
+      if (!arduinoSuccess) {
+        throw Exception('Failed to send Arduino commands');
       }
+      
+      isCooking.value = true;
+      cookingStatus.value = 'cooking';
+      
+      // Start timer
+      _startCookingTimer();
+      
+      Get.snackbar(
+        'Cooking Started',
+        'Started cooking ${foodItem.name}',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+      
+      return true;
       
     } catch (e) {
       print('Error starting cooking: $e');
@@ -94,33 +88,30 @@ class CookingController extends GetxController {
     if (!isCooking.value) return true;
     
     try {
-      bool sent = await bluetoothController.sendData('stop_cooking');
+      // Send Arduino stop command
+      await arduinoHandler.sendStopSequence();
       
-      if (sent) {
-        _stopCookingTimer();
-        isCooking.value = false;
-        cookingStatus.value = 'stopped';
-        
-        Get.snackbar(
-          'Cooking Stopped',
-          'Stopped cooking ${currentFoodName.value}',
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-        );
-        
-        return true;
-      } else {
-        Get.snackbar(
-          'Error',
-          'Failed to send stop command',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        return false;
-      }
+      _stopCookingTimer();
+      isCooking.value = false;
+      cookingStatus.value = 'stopped';
+      
+      Get.snackbar(
+        'Cooking Stopped',
+        'Stopped cooking ${currentFoodName.value}',
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+      );
+      
+      return true;
       
     } catch (e) {
       print('Error stopping cooking: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to stop cooking: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return false;
     }
   }
@@ -130,32 +121,29 @@ class CookingController extends GetxController {
     if (!isCooking.value) return true;
     
     try {
-      bool sent = await bluetoothController.sendData('pause_cooking');
+      // Send Arduino pause command
+      await arduinoHandler.pauseCooking();
       
-      if (sent) {
-        _stopCookingTimer();
-        cookingStatus.value = 'paused';
-        
-        Get.snackbar(
-          'Cooking Paused',
-          'Paused cooking ${currentFoodName.value}',
-          backgroundColor: Colors.blue,
-          colorText: Colors.white,
-        );
-        
-        return true;
-      } else {
-        Get.snackbar(
-          'Error',
-          'Failed to send pause command',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        return false;
-      }
+      _stopCookingTimer();
+      cookingStatus.value = 'paused';
+      
+      Get.snackbar(
+        'Cooking Paused',
+        'Paused cooking ${currentFoodName.value}',
+        backgroundColor: Colors.blue,
+        colorText: Colors.white,
+      );
+      
+      return true;
       
     } catch (e) {
       print('Error pausing cooking: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to pause cooking: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return false;
     }
   }
@@ -165,32 +153,29 @@ class CookingController extends GetxController {
     if (cookingStatus.value != 'paused') return true;
     
     try {
-      bool sent = await bluetoothController.sendData('resume_cooking');
+      // Send Arduino resume command
+      await arduinoHandler.resumeCooking();
       
-      if (sent) {
-        _startCookingTimer();
-        cookingStatus.value = 'cooking';
-        
-        Get.snackbar(
-          'Cooking Resumed',
-          'Resumed cooking ${currentFoodName.value}',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
-        
-        return true;
-      } else {
-        Get.snackbar(
-          'Error',
-          'Failed to send resume command',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        return false;
-      }
+      _startCookingTimer();
+      cookingStatus.value = 'cooking';
+      
+      Get.snackbar(
+        'Cooking Resumed',
+        'Resumed cooking ${currentFoodName.value}',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+      
+      return true;
       
     } catch (e) {
       print('Error resuming cooking: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to resume cooking: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
       return false;
     }
   }
@@ -307,4 +292,5 @@ class CookingController extends GetxController {
   
   // Check if cooking is completed
   bool get isCookingCompleted => cookingStatus.value == 'completed';
+
 }
