@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'dart:async';
 import 'services/native_bluetooth_controller.dart';
 
 class BluetoothPage extends StatelessWidget {
@@ -12,8 +11,6 @@ class BluetoothPage extends StatelessWidget {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       bluetoothController.requestBluetoothPermissions();
       
-      // Start connection status checker
-      _startConnectionStatusChecker();
     });
 
     return Scaffold(
@@ -287,107 +284,10 @@ class BluetoothPage extends StatelessWidget {
             
             SizedBox(height: 20),
             
-            // Data Communication Section
-            if (bluetoothController.isConnected.value) ...[
-              Card(
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Data Communication',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              decoration: InputDecoration(
-                                hintText: 'Enter command to send',
-                                border: OutlineInputBorder(),
-                              ),
-                              onSubmitted: (value) {
-                                if (value.isNotEmpty) {
-                                  bluetoothController.sendData(value);
-                                }
-                              },
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Send a test command
-                              bluetoothController.sendData('test_command');
-                            },
-                            child: Text('Send Test'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      Column(
-                        children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              // Send cooking command
-                              bluetoothController.sendData('180:15:1');
-                            },
-                            child: Text('Test Cooking'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Check connection
-                              bluetoothController.isDeviceConnected();
-                            },
-                            child: Text('Check Connection'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      Obx(() => Text(
-                        'Last received: ${bluetoothController.lastReceivedData.value.isEmpty ? "No data" : bluetoothController.lastReceivedData.value}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      )),
-                    ],
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),
     );
   }
 
-  // Check connection status periodically
-  void _startConnectionStatusChecker() {
-    Timer.periodic(Duration(seconds: 3), (timer) async {
-      if (bluetoothController.connectedDeviceName.value.isNotEmpty) {
-        bool actuallyConnected = await bluetoothController.isDeviceConnected();
-        if (!actuallyConnected) {
-          print('Connection lost - device is not actually connected');
-        }
-      }
-    });
-  }
 }
