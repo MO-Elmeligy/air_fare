@@ -166,6 +166,22 @@ class BluetoothPage extends StatelessWidget {
               ),
             )),
             
+            SizedBox(height: 10),
+            
+            // Refresh Button
+            ElevatedButton(
+              onPressed: () async {
+                await bluetoothController.requestBluetoothPermissions();
+                await bluetoothController.scanDevices();
+              },
+              child: Text('Refresh & Scan'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: 15),
+              ),
+            ),
+            
             SizedBox(height: 20),
             
             // Discovered Devices List
@@ -212,7 +228,44 @@ class BluetoothPage extends StatelessWidget {
                                         ElevatedButton(
                                           onPressed: () async {
                                             print('Connect button pressed for device: ${device['name']}');
-                                            await bluetoothController.connectToDevice(device);
+                                            
+                                            // Show loading indicator
+                                            showDialog(
+                                              context: context,
+                                              barrierDismissible: false,
+                                              builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                  content: Row(
+                                                    children: [
+                                                      CircularProgressIndicator(),
+                                                      SizedBox(width: 20),
+                                                      Text('Connecting to ${device['name']}...'),
+                                                    ],
+                                                  ),
+                                                );
+                                              },
+                                            );
+                                            
+                                            bool connected = await bluetoothController.connectToDevice(device);
+                                            
+                                            // Hide loading indicator
+                                            Navigator.of(context).pop();
+                                            
+                                            if (connected) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Connected to ${device['name']}'),
+                                                  backgroundColor: Colors.green,
+                                                ),
+                                              );
+                                            } else {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Failed to connect to ${device['name']}'),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
                                           },
                                           child: Text('Connect'),
                                           style: ElevatedButton.styleFrom(
@@ -274,6 +327,34 @@ class BluetoothPage extends StatelessWidget {
                             child: Text('Send Test'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10),
+                      Column(
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {
+                              // Send cooking command
+                              bluetoothController.sendData('180:15:1');
+                            },
+                            child: Text('Test Cooking'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              // Check connection
+                              bluetoothController.isDeviceConnected();
+                            },
+                            child: Text('Check Connection'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,
                             ),
                           ),

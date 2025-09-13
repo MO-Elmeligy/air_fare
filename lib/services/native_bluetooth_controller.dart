@@ -42,7 +42,20 @@ class NativeBluetoothController extends GetxController {
           String data = call.arguments['data'] ?? '';
           dataStreamController.add(data);
           lastReceivedData.value = data;
-          print('Received data: $data');
+          print('📱 Received data from Arduino: $data');
+          
+          // Check for specific messages
+          if (data.contains('ARDUINO_START')) {
+            print('✅ Arduino started successfully!');
+          } else if (data.contains('CONNECTION_READY')) {
+            print('✅ Arduino connection ready!');
+          } else if (data.contains('MESSAGE_')) {
+            print('📨 Arduino message: $data');
+          } else if (data.contains('ECHO_')) {
+            print('🔄 Arduino echo: $data');
+          } else if (data.contains('STATUS_')) {
+            print('📊 Arduino status: $data');
+          }
           break;
         case 'onDeviceFound':
           Map<String, dynamic> device = Map<String, dynamic>.from(call.arguments);
@@ -119,7 +132,17 @@ class NativeBluetoothController extends GetxController {
         await _initializeBluetooth();
         return true;
       } else {
-        print('Some permissions denied');
+        print('Some permissions denied - requesting again...');
+        
+        // Try to open app settings if permissions are permanently denied
+        bool shouldOpenSettings = statuses.values.any((status) => status == PermissionStatus.permanentlyDenied) ||
+                                 locationStatus == PermissionStatus.permanentlyDenied;
+        
+        if (shouldOpenSettings) {
+          print('Some permissions permanently denied - opening app settings');
+          await openAppSettings();
+        }
+        
         return false;
       }
     } catch (e) {
@@ -212,7 +235,7 @@ class NativeBluetoothController extends GetxController {
     }
   }
 
-  // Connect to a specific device - زي Serial Bluetooth Terminal
+  // Connect to a specific device - مبسط
   Future<bool> connectToDevice(Map<String, dynamic> device) async {
     print('=== CONNECT TO DEVICE CALLED ===');
     print('Device: $device');
@@ -238,12 +261,19 @@ class NativeBluetoothController extends GetxController {
       String deviceAddress = device['address'] ?? '';
       
       print('Connecting to $deviceName ($deviceAddress)...');
+      print('Device details: $device');
       
-      // Connect to the device - زي Serial Bluetooth Terminal تماماً
+      // Connect with timeout
       bool? result = await _channel.invokeMethod('connect', {
         'address': deviceAddress,
         'name': deviceName,
-      });
+      }).timeout(
+        Duration(seconds: 30), // 30 second timeout
+        onTimeout: () {
+          print('❌ Connection timeout after 30 seconds');
+          return false;
+        },
+      );
       
       print('Connection result: $result');
       
@@ -251,16 +281,30 @@ class NativeBluetoothController extends GetxController {
         connectedDeviceName.value = deviceName;
         connectedDeviceAddress.value = deviceAddress;
         isConnected.value = true;
-        print('Connected to $deviceName');
+        print('✅ Connected to $deviceName');
+        
+        // Wait for any data from Arduino
+        await Future.delayed(Duration(seconds: 3));
+        
+        if (lastReceivedData.value.isNotEmpty) {
+          print('✅ Received data from Arduino: ${lastReceivedData.value}');
+        } else {
+          print('⚠️ No data received yet - trying to send test message');
+          // Try sending a test message
+          await sendData('test');
+          await Future.delayed(Duration(seconds: 2));
+        }
+        
         return true;
       } else {
-        print('Failed to connect to device');
+        print('❌ Failed to connect to device');
         isConnected.value = false;
         return false;
       }
 
     } catch (e) {
-      print('Error connecting to device: $e');
+      print('❌ Error connecting to device: $e');
+      isConnected.value = false;
       return false;
     }
   }
