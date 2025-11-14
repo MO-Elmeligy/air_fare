@@ -6,6 +6,7 @@ import 'services/native_bluetooth_controller.dart';
 import 'BluetoothPage.dart';
 import 'detailsPage.dart';
 import 'NewDetailsPage.dart';
+import 'FanControlPage.dart';
 import 'models/food_item.dart';
 import 'providers/food_provider.dart';
 import 'services/bluetooth_data_handler.dart';
@@ -89,7 +90,14 @@ class _MyHomePageState extends State<MyHomePage> {
                         IconButton(
                           icon: Icon(Icons.menu),
                           color: Colors.white,
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FanControlPage(),
+                              ),
+                            );
+                          },
                         )
                       ],
                     ))

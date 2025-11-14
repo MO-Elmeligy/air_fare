@@ -233,10 +233,17 @@ class BluetoothPage extends StatelessWidget {
                                               builder: (BuildContext context) {
                                                 return AlertDialog(
                                                   content: Row(
+                                                    mainAxisSize: MainAxisSize.min,
                                                     children: [
                                                       CircularProgressIndicator(),
                                                       SizedBox(width: 20),
-                                                      Text('Connecting to ${device['name']}...'),
+                                                      Flexible(
+                                                        child: Text(
+                                                          'Connecting to ${device['name']}...',
+                                                          overflow: TextOverflow.ellipsis,
+                                                          maxLines: 2,
+                                                        ),
+                                                      ),
                                                     ],
                                                   ),
                                                 );
